@@ -163,7 +163,7 @@ public class KeybControls : MonoBehaviour
         }
 
         // NUMBERS setup
-        num_keys = 26;
+        num_keys = 10;
         angle = Mathf.PI * 0.5f;
 
         for (int i = 0; i < num_keys; i++)
@@ -175,12 +175,12 @@ public class KeybControls : MonoBehaviour
         }
 
         // SYMBOLS Setup
-        num_keys = 26;
+        num_keys = 16;
         angle = Mathf.PI * 0.5f;
 
         for (int i = 0; i < num_keys; i++)
         {
-            Transform text_label = UI.transform.GetChild(4).GetChild(3).GetChild(2).GetChild(i);
+            Transform text_label = UI.transform.GetChild(4).GetChild(2).GetChild(2).GetChild(i);
             text_label.GetComponent<UnityEngine.UI.Text>().text = "" + symbols[(i)];
             text_label.localPosition = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * 315 + new Vector3(0, 5, 0);
             angle -= Mathf.PI * 2 / num_keys;
@@ -190,13 +190,13 @@ public class KeybControls : MonoBehaviour
 
         // key_weights initalization
         for (int j = 0; j < key_weights.GetLength(1); j++)
-            key_weights[0, j] = 1.0f / 26.0f;
+            key_weights[0, j] = 360.0f / 26.0f;
 
         for (int j = 0; j < key_weights.GetLength(1); j++)
-            key_weights[1, j] = 1.0f / 10.0f;
+            key_weights[1, j] = 360.0f / 10.0f;
 
         for (int j = 0; j < key_weights.GetLength(1); j++)
-            key_weights[2, j] = 1.0f / 16.0f;
+            key_weights[2, j] = 360.0f / 16.0f;
     }
 
     private void Update()
@@ -223,23 +223,50 @@ public class KeybControls : MonoBehaviour
                 }
             }
 
-            // letters
-            float angle = 90 - key_weights[0, 0] / 2;
+            print(get_joystick_angle());
+
+            float sum = 0;
             for (int j = 0; j < 26; j++)
             {
-                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).rotation = Quaternion.Euler(0, 0, angle);
-                angle -= 360 * key_weights[0, j];
+                key_weights[0, j] = Mathf.Abs(13 - j) * triggers.y + 1;
+                //key_weights[0, j] = Mathf.Pow(triggers.y * 39 + 1, -Mathf.Abs(Mathf.Sin(
+                 //   Mathf.PI * ((float)(j)/26.0f + 0.5f + get_joystick_angle()))));
+                sum += key_weights[0, j];
+            }
+            for (int j = 0; j < 26; j++)
+            {
+                key_weights[0, j] *= sum;
+            }
+
+            // letters
+            float partition_angle = key_weights[0, 0] / 2;
+            float character_angle = Mathf.PI * 0.5f;
+
+            for (int j = 0; j < 26; j++)
+            {
+                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).localRotation =
+                    Quaternion.Euler(0, 0, partition_angle);
+                partition_angle += key_weights[0, j] * 360f;
+                UI.transform.GetChild(4).GetChild(0).GetChild(2).GetChild(j).localPosition =
+                    new Vector3(Mathf.Cos(character_angle), Mathf.Sin(character_angle), 0) * 315 + new Vector3(0, 5, 0);
+                character_angle -= Mathf.PI * 2 * key_weights[0, j];
             }
 
             // numbers
+            partition_angle = key_weights[1, 0] / 2;
             for (int j = 0; j < 10; j++)
-                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).rotation =
-                    Quaternion.Euler(0, 0, 360 * key_weights[1, j]);
+            {
+                UI.transform.GetChild(4).GetChild(1).GetChild(1).GetChild(j).localRotation = Quaternion.Euler(0, 0, partition_angle);
+                partition_angle += key_weights[1, j];
+            }
 
             // symbols
+            partition_angle = key_weights[2, 0] / 2;
             for (int j = 0; j < 16; j++)
-                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).rotation =
-                    Quaternion.Euler(0, 0, 360 * key_weights[2, j]);
+            {
+                UI.transform.GetChild(4).GetChild(2).GetChild(1).GetChild(j).localRotation = Quaternion.Euler(0, 0, partition_angle);
+                partition_angle += key_weights[2, j];
+            }
 
             // TEMP NEEDLE
             if (get_joystick_angle() >= 0)
@@ -261,9 +288,9 @@ public class KeybControls : MonoBehaviour
                 sfx_shift.Play();
                 sfx_unshift.Stop();
                 caps = true;
-                for (int i = 0; i < current_keyboard.childCount; i++)
+                for (int i = 0; i < current_keyboard.GetChild(2).childCount; i++)
                 {
-                    Transform letter_tile = current_keyboard.GetChild(i).GetChild(0);
+                    Transform letter_tile = current_keyboard.GetChild(2).GetChild(i);
                     letter_tile.GetComponent<UnityEngine.UI.Text>().text =
                         letter_tile.GetComponent<UnityEngine.UI.Text>().text.ToUpper();
                 }
@@ -273,9 +300,9 @@ public class KeybControls : MonoBehaviour
                 sfx_unshift.Play();
                 sfx_shift.Stop();
                 caps = false;
-                for (int i = 0; i < current_keyboard.childCount; i++)
+                for (int i = 0; i < current_keyboard.GetChild(2).childCount; i++)
                 {
-                    Transform letter_tile = current_keyboard.GetChild(i).GetChild(0);
+                    Transform letter_tile = current_keyboard.GetChild(2).GetChild(i);
                     letter_tile.GetComponent<UnityEngine.UI.Text>().text =
                         letter_tile.GetComponent<UnityEngine.UI.Text>().text.ToLower();
                 }
