@@ -21,7 +21,7 @@ public class KeybControls : MonoBehaviour
 
     public GameObject UI;
     public GameObject stick_SFX;
-    public GameObject keyfab;
+    public GameObject partition;
 
 
 
@@ -50,6 +50,7 @@ public class KeybControls : MonoBehaviour
     private float keyb_size_anim = 1;
     private float space_size_anim = 1;
     private char[] symbols = { '.', ',', '!', '?', ':', ';', '-', '_', ')', '(', '@', '#', '%', '&', '\'', '*' };
+    private float[,] key_weights = new float[3, 26];
     private int prev_char = -1;
     private int tick_limit = 0;
     private int cursor = 0;
@@ -147,77 +148,60 @@ public class KeybControls : MonoBehaviour
 
     private void Start()
     {
-        // LETTERS setup
-        float angle_deg = 0;
-        float angle_rad;
-        int num_letters = 26;
-        float radius = 300;
+        #region keyboard setup
 
-        for (int i = 0; i < num_letters; i++)
+        // LETTERS Setup
+        int num_keys = 26;
+        float angle = Mathf.PI * 0.5f;
+
+        for (int i = 0; i < num_keys; i++)
         {
-            Transform new_key = Instantiate(keyfab).transform;
-            new_key.parent = UI.transform.GetChild(4).GetChild(0);
-            angle_rad = (90 - angle_deg) * Mathf.Deg2Rad;
-            new_key.localPosition = new Vector3(Mathf.Cos(angle_rad) * radius, Mathf.Sin(angle_rad) * radius, 1);
-            new_key.localRotation = Quaternion.Euler(0, 0, -angle_deg);
-
-            string key_char = "" + (char)(97 + i);
-            new_key.name = key_char;
-            new_key.GetChild(1).GetComponent<UnityEngine.UI.Text>().text = "" + key_char;
-
-            set_key_scale(new_key, 0.15f);
-
-            angle_deg += 360.0f / num_letters;
+            Transform text_label = UI.transform.GetChild(4).GetChild(0).GetChild(2).GetChild(i);
+            text_label.GetComponent<UnityEngine.UI.Text>().text = "" + (char)(97 + i);
+            text_label.localPosition = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * 315 + new Vector3(0, 5, 0);
+            angle -= Mathf.PI * 2 / num_keys;
         }
-
 
         // NUMBERS setup
-        angle_deg = 0;
-        num_letters = 10;
+        num_keys = 26;
+        angle = Mathf.PI * 0.5f;
 
-        for (int i = 0; i < num_letters; i++)
+        for (int i = 0; i < num_keys; i++)
         {
-            Transform new_key = Instantiate(keyfab).transform;
-            new_key.parent = UI.transform.GetChild(4).GetChild(1);
-            angle_rad = (90 - angle_deg) * Mathf.Deg2Rad;
-            new_key.localPosition = new Vector3(Mathf.Cos(angle_rad) * radius, Mathf.Sin(angle_rad) * radius, 1);
-            new_key.localRotation = Quaternion.Euler(0, 0, -angle_deg);
-
-            string key_char = "" + i;
-            new_key.name = key_char;
-            new_key.GetChild(1).GetComponent<UnityEngine.UI.Text>().text = "" + key_char;
-
-            set_key_scale(new_key, 0.65f);
-
-            angle_deg += 360.0f / num_letters;
+            Transform text_label = UI.transform.GetChild(4).GetChild(1).GetChild(2).GetChild(i);
+            text_label.GetComponent<UnityEngine.UI.Text>().text = "" + i;
+            text_label.localPosition = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * 315 + new Vector3(0, 5, 0);
+            angle -= Mathf.PI * 2 / num_keys;
         }
 
+        // SYMBOLS Setup
+        num_keys = 26;
+        angle = Mathf.PI * 0.5f;
 
-        // SYMBOLS setup
-        angle_deg = 0;
-        num_letters = 16;
-
-        for (int i = 0; i < num_letters; i++)
+        for (int i = 0; i < num_keys; i++)
         {
-            Transform new_key = Instantiate(keyfab).transform;
-            new_key.parent = UI.transform.GetChild(4).GetChild(2);
-            angle_rad = (90 - angle_deg) * Mathf.Deg2Rad;
-            new_key.localPosition = new Vector3(Mathf.Cos(angle_rad) * radius, Mathf.Sin(angle_rad) * radius, 1);
-            new_key.localRotation = Quaternion.Euler(0, 0, -angle_deg);
-
-            string key_char = "" + symbols[i];
-            new_key.name = key_char;
-            new_key.GetChild(1).GetComponent<UnityEngine.UI.Text>().text = "" + key_char;
-
-            set_key_scale(new_key, 0.2f);
-
-            angle_deg += 360.0f / num_letters;
+            Transform text_label = UI.transform.GetChild(4).GetChild(3).GetChild(2).GetChild(i);
+            text_label.GetComponent<UnityEngine.UI.Text>().text = "" + symbols[(i)];
+            text_label.localPosition = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * 315 + new Vector3(0, 5, 0);
+            angle -= Mathf.PI * 2 / num_keys;
         }
+
+        #endregion
+
+        // key_weights initalization
+        for (int j = 0; j < key_weights.GetLength(1); j++)
+            key_weights[0, j] = 1.0f / 26.0f;
+
+        for (int j = 0; j < key_weights.GetLength(1); j++)
+            key_weights[1, j] = 1.0f / 10.0f;
+
+        for (int j = 0; j < key_weights.GetLength(1); j++)
+            key_weights[2, j] = 1.0f / 16.0f;
     }
 
     private void Update()
     {
-        #region keyboard letter select
+        #region keyboard refresh
         Transform current_keyboard = UI.transform.GetChild(4).GetChild(keyboard);
 
         if (keyboard < 3)
@@ -229,27 +213,43 @@ public class KeybControls : MonoBehaviour
                 {
                     // space is selected
                     letter = -1;
-                    UI.transform.GetChild(2).GetComponent<UnityEngine.UI.Image>().color = new Color(0.5f, 1, 1);
+                    UI.transform.GetChild(5).GetComponent<UnityEngine.UI.Image>().color = new Color(0.5f, 1, 1);
                 }
                 else
                 {
                     // one of the letters is selected
                     letter = (int)(get_joystick_angle() * UI.transform.GetChild(4).GetChild(keyboard).childCount);
-                    UI.transform.GetChild(2).GetComponent<UnityEngine.UI.Image>().color = new Color(1, 1, 1);
+                    UI.transform.GetChild(5).GetComponent<UnityEngine.UI.Image>().color = new Color(1, 1, 1);
                 }
-
-                // blue highlight
-                if (i == letter)
-                    set_key_color(current_keyboard.GetChild(i), new Color(0.5f, 1, 1));
-                else
-                    set_key_color(current_keyboard.GetChild(i), new Color(1, 1, 1));
             }
+
+            // letters
+            float angle = 90 - key_weights[0, 0] / 2;
+            for (int j = 0; j < 26; j++)
+            {
+                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).rotation = Quaternion.Euler(0, 0, angle);
+                angle -= 360 * key_weights[0, j];
+            }
+
+            // numbers
+            for (int j = 0; j < 10; j++)
+                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).rotation =
+                    Quaternion.Euler(0, 0, 360 * key_weights[1, j]);
+
+            // symbols
+            for (int j = 0; j < 16; j++)
+                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).rotation =
+                    Quaternion.Euler(0, 0, 360 * key_weights[2, j]);
+
+            // TEMP NEEDLE
+            if (get_joystick_angle() >= 0)
+                UI.transform.GetChild(7).rotation = Quaternion.Euler(0, 0, -360 * get_joystick_angle());
         }
         else
         {
             // color wheel needle
             if (get_joystick_angle() >= 0)
-                UI.transform.GetChild(6).rotation = Quaternion.Euler(0, 0, -360 * get_joystick_angle());
+                current_keyboard.GetChild(2).rotation = Quaternion.Euler(0, 0, -360 * get_joystick_angle());
         }
         #endregion
 
@@ -303,19 +303,13 @@ public class KeybControls : MonoBehaviour
                 new Vector3(0.8f + 0.2f * (keyboard == i ? keyb_size_anim : 1 - keyb_size_anim),
                             0.8f + 0.2f * (keyboard == i ? keyb_size_anim : 1 - keyb_size_anim),
                             1);
-            if (i == 3)
-            {
-                // color arrow
-                UI.transform.GetChild(6).position = UI.transform.GetChild(4).GetChild(i).position;
-                UI.transform.GetChild(6).localScale = UI.transform.GetChild(4).GetChild(i).localScale;
-            }
         }
         // move and resize the spacebar
         int space_to_pos = keyboard == 3 ? 1 : 2;
-        UI.transform.GetChild(2).position =
+        UI.transform.GetChild(5).position =
             UI.transform.GetChild(3).GetChild(space_to_pos).position * keyb_pos_anim
-            + UI.transform.GetChild(2).position * (1 - keyb_pos_anim);
-        UI.transform.GetChild(2).localScale =
+            + UI.transform.GetChild(5).position * (1 - keyb_pos_anim);
+        UI.transform.GetChild(5).localScale =
                 new Vector3(0.8f + 0.2f * (keyboard == 3 ? 1 - space_size_anim : space_size_anim),
                             0.8f + 0.2f * (keyboard == 3 ? 1 - space_size_anim : space_size_anim),
                             1);
@@ -355,24 +349,6 @@ public class KeybControls : MonoBehaviour
                 = Color.HSVToRGB(get_joystick_angle(), 1, 1);
 
         #endregion
-
-        /*#region key_resize_test
-
-        Transform key = UI.transform.GetChild(8);
-        Transform parts = key.GetChild(0);
-        float key_scale = 1 - triggers.y;
-
-        // key shape
-        parts.localPosition = new Vector3(0, key_scale * -26, 0);
-        parts.localScale = new Vector3(key_scale, 1, 1) * 0.75f;
-        parts.GetChild(0).localScale = new Vector3(1, key_scale, 1);
-        parts.GetChild(2).localScale = new Vector3(1, key_scale, 1);
-        parts.GetChild(2).GetChild(0).localScale = new Vector3(1, Mathf.Pow(key_scale + 0.00001f, -1.3f), 1);
-
-        //label
-        key.GetChild(1).localScale = Vector3.one * Mathf.Min(key_scale * 3f, 1);
-
-        #endregion*/
     }
 
     void A()
@@ -390,7 +366,7 @@ public class KeybControls : MonoBehaviour
             {
                 sfx_color_sel.Play();
                 color = get_joystick_angle();
-                UI.transform.GetChild(5).GetComponent<UnityEngine.UI.Image>().color = Color.HSVToRGB(color, 1, 1);
+                UI.transform.GetChild(6).GetComponent<UnityEngine.UI.Image>().color = Color.HSVToRGB(color, 1, 1);
             }
         }
     }
@@ -512,11 +488,6 @@ public class KeybControls : MonoBehaviour
 
     void set_keyboard(int delta_keyboard)
     {
-        for (int i = 0; i < UI.transform.GetChild(4).GetChild(keyboard).childCount; i++)
-        {
-            set_key_color(UI.transform.GetChild(4).GetChild(keyboard).GetChild(i), new Color(1, 1, 1));
-        }
-
         if (delta_keyboard == -1) {
             if (keyboard == 0) return;
             sfx_wheel_swap_left.Play();
@@ -530,27 +501,5 @@ public class KeybControls : MonoBehaviour
         keyboard += delta_keyboard;
         keyb_pos_anim = 0;
         keyb_size_anim = 0;
-    }
-
-    void set_key_scale(Transform key, float scale)
-    {
-        // key shape
-        key.GetChild(0).localPosition = new Vector3(0, scale * -26, 0);
-        key.GetChild(0).localScale = new Vector3(scale, 1, 1) * 0.75f;
-        key.GetChild(0).GetChild(0).localScale = new Vector3(1, scale, 1);
-        key.GetChild(0).GetChild(2).localScale = new Vector3(1, scale, 1);
-        key.GetChild(0).GetChild(2).GetChild(0).localScale = new Vector3(1, Mathf.Pow(scale + 0.00001f, -1.3f), 1);
-
-        //label
-        key.GetChild(1).localScale = Vector3.one * Mathf.Min(scale * 3f, 1);
-    }
-
-    void set_key_color(Transform key, Color color)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            key.GetChild(0).GetChild(i).GetComponent<UnityEngine.UI.Image>().color = color;
-        }
-        key.GetChild(0).GetChild(2).GetChild(0).GetComponent<UnityEngine.UI.Image>().color = color;
     }
 }
