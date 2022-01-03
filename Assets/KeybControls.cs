@@ -51,7 +51,6 @@ public class KeybControls : MonoBehaviour
     private float space_size_anim = 1;
     private char[] symbols = { '.', ',', '!', '?', ':', ';', '-', '_', ')', '(', '@', '#', '%', '&', '\'', '*' };
     private int prev_char = -1;
-    private int rumble_countdown = -1;
     private int tick_limit = 0;
     private int cursor = 0;
     private int cursor_blink = 0;
@@ -152,13 +151,13 @@ public class KeybControls : MonoBehaviour
         float angle_deg = 0;
         float angle_rad;
         int num_letters = 26;
-        float radius = 500;
+        float radius = 300;
 
         for (int i = 0; i < num_letters; i++)
         {
             Transform new_key = Instantiate(keyfab).transform;
             new_key.parent = UI.transform.GetChild(4).GetChild(0);
-            angle_rad = (90 - angle_deg * 1.08f) * Mathf.Deg2Rad;
+            angle_rad = (90 - angle_deg) * Mathf.Deg2Rad;
             new_key.localPosition = new Vector3(Mathf.Cos(angle_rad) * radius, Mathf.Sin(angle_rad) * radius, 1);
             new_key.localRotation = Quaternion.Euler(0, 0, -angle_deg);
 
@@ -166,41 +165,53 @@ public class KeybControls : MonoBehaviour
             new_key.name = key_char;
             new_key.GetChild(1).GetComponent<UnityEngine.UI.Text>().text = "" + key_char;
 
-            set_key_scale(new_key, 0.3f);
+            set_key_scale(new_key, 0.15f);
 
-            angle_deg += 360 / num_letters;
+            angle_deg += 360.0f / num_letters;
         }
 
 
         // NUMBERS setup
         angle_deg = 0;
         num_letters = 10;
-        radius = 500;
 
         for (int i = 0; i < num_letters; i++)
         {
             Transform new_key = Instantiate(keyfab).transform;
             new_key.parent = UI.transform.GetChild(4).GetChild(1);
-            new_key.position = new Vector3(Mathf.Cos(angle_deg) * radius, Mathf.Sin(angle_deg) * radius, 1);
-            new_key.rotation = Quaternion.Euler(0, 0, angle_deg);
+            angle_rad = (90 - angle_deg) * Mathf.Deg2Rad;
+            new_key.localPosition = new Vector3(Mathf.Cos(angle_rad) * radius, Mathf.Sin(angle_rad) * radius, 1);
+            new_key.localRotation = Quaternion.Euler(0, 0, -angle_deg);
 
-            angle_deg += 360 / num_letters;
+            string key_char = "" + i;
+            new_key.name = key_char;
+            new_key.GetChild(1).GetComponent<UnityEngine.UI.Text>().text = "" + key_char;
+
+            set_key_scale(new_key, 0.65f);
+
+            angle_deg += 360.0f / num_letters;
         }
 
 
         // SYMBOLS setup
         angle_deg = 0;
         num_letters = 16;
-        radius = 500;
 
         for (int i = 0; i < num_letters; i++)
         {
             Transform new_key = Instantiate(keyfab).transform;
             new_key.parent = UI.transform.GetChild(4).GetChild(2);
-            new_key.position = new Vector3(Mathf.Cos(angle_deg) * radius, Mathf.Sin(angle_deg) * radius, 1);
-            new_key.rotation = Quaternion.Euler(0, 0, angle_deg);
+            angle_rad = (90 - angle_deg) * Mathf.Deg2Rad;
+            new_key.localPosition = new Vector3(Mathf.Cos(angle_rad) * radius, Mathf.Sin(angle_rad) * radius, 1);
+            new_key.localRotation = Quaternion.Euler(0, 0, -angle_deg);
 
-            angle_deg += 360 / num_letters;
+            string key_char = "" + symbols[i];
+            new_key.name = key_char;
+            new_key.GetChild(1).GetComponent<UnityEngine.UI.Text>().text = "" + key_char;
+
+            set_key_scale(new_key, 0.2f);
+
+            angle_deg += 360.0f / num_letters;
         }
     }
 
@@ -310,11 +321,10 @@ public class KeybControls : MonoBehaviour
                             1);
         #endregion
 
-        #region rumble
+        #region wheel tick
         if (prev_char != get_joystick_character())
         {
-            rumble_countdown = 12;
-            if (tick_limit >= 10)
+            if (tick_limit >= 3)
             {
                 tick_limit = 0;
                 Instantiate(stick_SFX);
@@ -323,15 +333,6 @@ public class KeybControls : MonoBehaviour
         if (tick_limit < 100) tick_limit++;
         prev_char = get_joystick_character();
 
-        if (rumble_countdown > 0)
-        {
-            Gamepad.current.SetMotorSpeeds(0.25f, 0);
-            rumble_countdown--;
-        }
-        else
-        {
-            Gamepad.current.SetMotorSpeeds(0, 0);
-        }
         #endregion
 
         #region update textbox
@@ -550,5 +551,6 @@ public class KeybControls : MonoBehaviour
         {
             key.GetChild(0).GetChild(i).GetComponent<UnityEngine.UI.Image>().color = color;
         }
+        key.GetChild(0).GetChild(2).GetChild(0).GetComponent<UnityEngine.UI.Image>().color = color;
     }
 }
