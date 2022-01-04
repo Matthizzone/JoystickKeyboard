@@ -15,6 +15,8 @@ public class KeybControls : MonoBehaviour
     Vector2 right_stick;
     Vector2 triggers;
 
+    public float temp = -1.9f;
+
 
 
     // Reference variables
@@ -223,50 +225,33 @@ public class KeybControls : MonoBehaviour
                 }
             }
 
-            print(get_joystick_angle());
-
+            // calculate weights
             float sum = 0;
             for (int j = 0; j < 26; j++)
             {
-                key_weights[0, j] = Mathf.Abs(13 - j) * triggers.y + 1;
-                //key_weights[0, j] = Mathf.Pow(triggers.y * 39 + 1, -Mathf.Abs(Mathf.Sin(
-                 //   Mathf.PI * ((float)(j)/26.0f + 0.5f + get_joystick_angle()))));
+                if (get_joystick_angle() < 0)
+                {
+                    key_weights[0, j] = 1;
+                }
+                else
+                {
+                    int current_key = Mathf.Min(
+                        Mathf.Abs(j - (int)(get_joystick_angle() * 26) - 26),
+                        Mathf.Abs(j - (int)(get_joystick_angle() * 26)),
+                        Mathf.Abs(j - (int)(get_joystick_angle() * 26) + 26)
+                        );
+                    key_weights[0, j] = triggers.y * Mathf.Max(4 - current_key, 0) + 1;
+                }
                 sum += key_weights[0, j];
             }
             for (int j = 0; j < 26; j++)
             {
-                key_weights[0, j] *= sum;
+                key_weights[0, j] /= sum;
             }
 
-            // letters
-            float partition_angle = key_weights[0, 0] / 2;
-            float character_angle = Mathf.PI * 0.5f;
-
-            for (int j = 0; j < 26; j++)
-            {
-                UI.transform.GetChild(4).GetChild(0).GetChild(1).GetChild(j).localRotation =
-                    Quaternion.Euler(0, 0, partition_angle);
-                partition_angle += key_weights[0, j] * 360f;
-                UI.transform.GetChild(4).GetChild(0).GetChild(2).GetChild(j).localPosition =
-                    new Vector3(Mathf.Cos(character_angle), Mathf.Sin(character_angle), 0) * 315 + new Vector3(0, 5, 0);
-                character_angle -= Mathf.PI * 2 * key_weights[0, j];
-            }
-
-            // numbers
-            partition_angle = key_weights[1, 0] / 2;
-            for (int j = 0; j < 10; j++)
-            {
-                UI.transform.GetChild(4).GetChild(1).GetChild(1).GetChild(j).localRotation = Quaternion.Euler(0, 0, partition_angle);
-                partition_angle += key_weights[1, j];
-            }
-
-            // symbols
-            partition_angle = key_weights[2, 0] / 2;
-            for (int j = 0; j < 16; j++)
-            {
-                UI.transform.GetChild(4).GetChild(2).GetChild(1).GetChild(j).localRotation = Quaternion.Euler(0, 0, partition_angle);
-                partition_angle += key_weights[2, j];
-            }
+            update_board2(0); // LETTERS
+            //update_board(1); // NUMBERS
+            //update_board(2); // SYMBOLS
 
             // TEMP NEEDLE
             if (get_joystick_angle() >= 0)
@@ -502,10 +487,16 @@ public class KeybControls : MonoBehaviour
     {
         // up is a, right is like f, down is m, left is u)
         float angle = get_joystick_angle();
+        int angle_int = 0;
         if (angle < 0) return ' ';
 
         if (keyboard == 0)
-            return (char)((int)(65 + (caps ? 0 : 32) + angle * 26));
+        {
+            angle += (keyboard == 0 ? 0.5f / 26f : 0);
+            angle_int = (int)(angle * 26);
+            if (angle_int == 26) angle_int = 0;
+            return (char)(((int)(65 + (caps ? 0 : 32) + angle_int)));
+        }
         else if (keyboard == 1)
             return (char)((int)(48 + angle * 10));
         else if (keyboard == 2)
@@ -528,5 +519,64 @@ public class KeybControls : MonoBehaviour
         keyboard += delta_keyboard;
         keyb_pos_anim = 0;
         keyb_size_anim = 0;
+    }
+
+    void update_board(int which)
+    {
+        // render weight matrix
+        Transform which_board = UI.transform.GetChild(4).GetChild(which);
+        float partition_angle = 0.01f;// 360f / 26 / 2;
+        float character_angle = Mathf.PI * 0.5f;
+
+        for (int j = 0; j < which_board.GetChild(1).childCount; j++)
+        {
+            // partitions
+            which_board.GetChild(1).GetChild(j).localRotation =
+                Quaternion.Euler(0, 0, -partition_angle);
+            partition_angle += key_weights[which, j] * 360f;
+
+            // labels
+            which_board.GetChild(2).GetChild(j).localPosition =
+                new Vector3(Mathf.Cos(character_angle), Mathf.Sin(character_angle), 0) * 315 + new Vector3(0, 5, 0);
+            character_angle -= Mathf.PI * 2 * key_weights[which, j];
+        }
+    }
+
+    void update_board2(int which)
+    {
+        // render weight matrix
+        Transform which_board = UI.transform.GetChild(4).GetChild(which);
+
+        float partition_angle = -6.9f; // degres   + is right // 360f / 26 / 2;
+        float character_angle = Mathf.PI * 0.5f; // radians   + is left
+        float attraction_angle = get_joystick_angle() + 0.5f;
+
+        if (attraction_angle > 1) attraction_angle -= 1f;
+
+        for (int j = 0; j < which_board.GetChild(1).childCount; j++)
+        {
+            // partitions
+            float angle_temp = angle_minus(attraction_angle, partition_angle / 360f);
+            float shifter = (triggers.y * 0.6f) * (get_joystick_angle() < 0 ? 0 : angle_temp)
+                * -(Mathf.Abs(angle_temp) + 0.3f) * (Mathf.Abs(angle_temp) - 0.5f);
+                
+
+            which_board.GetChild(1).GetChild(j).localRotation =
+                Quaternion.Euler(0, 0, -partition_angle - 3000f * shifter);
+            partition_angle += 360f / 26f;
+
+            // labels
+            angle_temp = character_angle - temp * shifter;
+            which_board.GetChild(2).GetChild(j).localPosition =
+                new Vector3(Mathf.Cos(angle_temp), Mathf.Sin(angle_temp), 0) * 315 + new Vector3(0, 5, 0);
+            character_angle -= Mathf.PI * 2 / 26f;
+        }
+    }
+
+    float angle_minus(float a, float b)
+    {
+        if (Mathf.Abs(a - b + 1) <= 0.5f) return a - b + 1;
+        if (Mathf.Abs(a - b) <= 0.5f) return a - b;
+        else return a - b - 1;
     }
 }
