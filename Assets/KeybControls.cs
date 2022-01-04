@@ -9,13 +9,10 @@ public class KeybControls : MonoBehaviour
     // Input variables
 
     Input input;
-    PlayerInput playerInput;
 
     Vector2 left_stick;
     Vector2 right_stick;
     Vector2 triggers;
-
-    public float temp = -1.9f;
 
 
 
@@ -52,11 +49,13 @@ public class KeybControls : MonoBehaviour
     private float keyb_size_anim = 1;
     private float space_size_anim = 1;
     private char[] symbols = { '.', ',', '!', '?', ':', ';', '-', '_', ')', '(', '@', '#', '%', '&', '\'', '*' };
-    private float[,] key_weights = new float[3, 26];
     private int prev_char = -1;
     private int tick_limit = 0;
     private int cursor = 0;
     private int cursor_blink = 0;
+    private bool wheel_lock = false;
+    private float wheel_anim = 0;
+    private float letter_lock = 0;
 
 
     private void Awake()
@@ -189,16 +188,6 @@ public class KeybControls : MonoBehaviour
         }
 
         #endregion
-
-        // key_weights initalization
-        for (int j = 0; j < key_weights.GetLength(1); j++)
-            key_weights[0, j] = 360.0f / 26.0f;
-
-        for (int j = 0; j < key_weights.GetLength(1); j++)
-            key_weights[1, j] = 360.0f / 10.0f;
-
-        for (int j = 0; j < key_weights.GetLength(1); j++)
-            key_weights[2, j] = 360.0f / 16.0f;
     }
 
     private void Update()
@@ -225,33 +214,9 @@ public class KeybControls : MonoBehaviour
                 }
             }
 
-            // calculate weights
-            float sum = 0;
-            for (int j = 0; j < 26; j++)
-            {
-                if (get_joystick_angle() < 0)
-                {
-                    key_weights[0, j] = 1;
-                }
-                else
-                {
-                    int current_key = Mathf.Min(
-                        Mathf.Abs(j - (int)(get_joystick_angle() * 26) - 26),
-                        Mathf.Abs(j - (int)(get_joystick_angle() * 26)),
-                        Mathf.Abs(j - (int)(get_joystick_angle() * 26) + 26)
-                        );
-                    key_weights[0, j] = triggers.y * Mathf.Max(4 - current_key, 0) + 1;
-                }
-                sum += key_weights[0, j];
-            }
-            for (int j = 0; j < 26; j++)
-            {
-                key_weights[0, j] /= sum;
-            }
-
-            update_board2(0); // LETTERS
-            //update_board(1); // NUMBERS
-            //update_board(2); // SYMBOLS
+            update_board(0); // LETTERS
+            update_board(1); // NUMBERS
+            update_board(2); // SYMBOLS
 
             // TEMP NEEDLE
             if (get_joystick_angle() >= 0)
@@ -361,6 +326,23 @@ public class KeybControls : MonoBehaviour
                 = Color.HSVToRGB(get_joystick_angle(), 1, 1);
 
         #endregion
+
+        if (!wheel_lock && (left_stick.x > 0.9f || left_stick.y > 0.9f || left_stick.x < -0.9f || left_stick.y < -0.9f))
+        {
+            wheel_lock = true;
+            letter_lock = get_joystick_angle();
+            print("LOCK");
+        }
+        else if (wheel_lock && !(left_stick.x > 0.9f || left_stick.y > 0.9f || left_stick.x < -0.9f || left_stick.y < -0.9f))
+        {
+            wheel_lock = false;
+        }
+
+        wheel_anim += (wheel_lock ? 0.2f : -0.2f);
+        if (wheel_anim > 1) wheel_anim = 1;
+        if (wheel_anim < 0) wheel_anim = 0;
+
+        UI.transform.GetChild(8).GetComponent<UnityEngine.UI.Text>().text = "" + wheel_anim;
     }
 
     void A()
@@ -487,7 +469,7 @@ public class KeybControls : MonoBehaviour
     {
         // up is a, right is like f, down is m, left is u)
         float angle = get_joystick_angle();
-        int angle_int = 0;
+        int angle_int;
         if (angle < 0) return ' ';
 
         if (keyboard == 0)
@@ -523,46 +505,26 @@ public class KeybControls : MonoBehaviour
 
     void update_board(int which)
     {
-        // render weight matrix
+        // First find a geometric regular arrangement, and then distort or magnify
+        // by pulling all the partitions and labels away from the pointer.
+
         Transform which_board = UI.transform.GetChild(4).GetChild(which);
-        float partition_angle = 0.01f;// 360f / 26 / 2;
-        float character_angle = Mathf.PI * 0.5f;
+        int num_children = which_board.GetChild(1).childCount;
 
-        for (int j = 0; j < which_board.GetChild(1).childCount; j++)
-        {
-            // partitions
-            which_board.GetChild(1).GetChild(j).localRotation =
-                Quaternion.Euler(0, 0, -partition_angle);
-            partition_angle += key_weights[which, j] * 360f;
-
-            // labels
-            which_board.GetChild(2).GetChild(j).localPosition =
-                new Vector3(Mathf.Cos(character_angle), Mathf.Sin(character_angle), 0) * 315 + new Vector3(0, 5, 0);
-            character_angle -= Mathf.PI * 2 * key_weights[which, j];
-        }
-    }
-
-    void update_board2(int which)
-    {
-        // render weight matrix
-        Transform which_board = UI.transform.GetChild(4).GetChild(which);
-
-        float partition_angle = -6.9f; // degres   + is right // 360f / 26 / 2;
-        float character_angle = Mathf.PI * 0.5f; // radians   + is left
-        float attraction_angle = get_joystick_angle() + 0.5f;
-
+        float partition_angle = -180f / num_children; // degres   + is right // 360f / 26 / 2;
+        float attraction_angle = letter_lock + 0.5f; // polar opposite of pointer
         if (attraction_angle > 1) attraction_angle -= 1f;
 
-        for (int j = 0; j < which_board.GetChild(1).childCount; j++)
+        for (int j = 0; j < num_children; j++)
         {
             // partition position
             float angle_temp = angle_minus(attraction_angle, partition_angle / 360f);
-            float shifter = (triggers.y * 0.6f) * (get_joystick_angle() < 0 ? 0 : angle_temp)
+            float shifter = (wheel_anim * 0.6f) * (letter_lock < 0 ? 0 : angle_temp)
                 * -(Mathf.Abs(angle_temp) + 0.3f) * (Mathf.Abs(angle_temp) - 0.5f);
-                
+
             which_board.GetChild(1).GetChild(j).localRotation =
                 Quaternion.Euler(0, 0, -partition_angle - 3000f * shifter);
-            partition_angle += 360f / 26f;
+            partition_angle += 360f / num_children;
 
             // label position
             float left_angle = which_board.GetChild(1).GetChild(j).eulerAngles.z;
@@ -578,7 +540,6 @@ public class KeybControls : MonoBehaviour
 
             which_board.GetChild(2).GetChild(j).localPosition =
                 new Vector3(Mathf.Cos(angle_temp), Mathf.Sin(angle_temp), 0) * 315 + new Vector3(0, 5, 0);
-            character_angle -= angle_temp;
 
             // label scaling
             float angle_size = angle_minus(left_angle, right_angle);
