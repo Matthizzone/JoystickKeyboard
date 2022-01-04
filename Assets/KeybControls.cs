@@ -560,16 +560,28 @@ public class KeybControls : MonoBehaviour
             float shifter = (triggers.y * 0.6f) * (get_joystick_angle() < 0 ? 0 : angle_temp)
                 * -(Mathf.Abs(angle_temp) + 0.3f) * (Mathf.Abs(angle_temp) - 0.5f);
                 
-
             which_board.GetChild(1).GetChild(j).localRotation =
                 Quaternion.Euler(0, 0, -partition_angle - 3000f * shifter);
             partition_angle += 360f / 26f;
 
             // labels
-            angle_temp = character_angle - temp * shifter;
+            float left_angle = which_board.GetChild(1).GetChild(j).eulerAngles.z;
+            float right_angle = (j != which_board.GetChild(1).childCount - 1 ? 
+                which_board.GetChild(1).GetChild(j + 1).eulerAngles.z
+                : which_board.GetChild(1).GetChild(0).eulerAngles.z);
+
+            left_angle /= 360;
+            right_angle /= 360;
+
+            angle_temp = angle_plus(left_angle, right_angle) / 2;
+            float angle_size = angle_minus(left_angle, right_angle);
+            angle_temp = angle_temp * Mathf.PI * 2 + Mathf.PI / 2;
+
+            print(j + "   " + angle_temp);
+
             which_board.GetChild(2).GetChild(j).localPosition =
                 new Vector3(Mathf.Cos(angle_temp), Mathf.Sin(angle_temp), 0) * 315 + new Vector3(0, 5, 0);
-            character_angle -= Mathf.PI * 2 / 26f;
+            character_angle -= angle_temp;
         }
     }
 
@@ -578,5 +590,12 @@ public class KeybControls : MonoBehaviour
         if (Mathf.Abs(a - b + 1) <= 0.5f) return a - b + 1;
         if (Mathf.Abs(a - b) <= 0.5f) return a - b;
         else return a - b - 1;
+    }
+
+    float angle_plus(float a, float b)
+    {
+        if (Mathf.Abs(a - b + 1) <= 0.5f) return a + b + 1;
+        if (Mathf.Abs(a - b) <= 0.5f) return a + b;
+        else return a + b - 1;
     }
 }
