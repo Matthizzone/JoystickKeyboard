@@ -327,11 +327,12 @@ public class KeybControls : MonoBehaviour
 
         #endregion
 
+        #region wheel locking
+
         if (!wheel_lock && (left_stick.x > 0.9f || left_stick.y > 0.9f || left_stick.x < -0.9f || left_stick.y < -0.9f))
         {
             wheel_lock = true;
             letter_lock = get_joystick_angle();
-            print("LOCK");
         }
         else if (wheel_lock && !(left_stick.x > 0.9f || left_stick.y > 0.9f || left_stick.x < -0.9f || left_stick.y < -0.9f))
         {
@@ -342,7 +343,7 @@ public class KeybControls : MonoBehaviour
         if (wheel_anim > 1) wheel_anim = 1;
         if (wheel_anim < 0) wheel_anim = 0;
 
-        UI.transform.GetChild(8).GetComponent<UnityEngine.UI.Text>().text = "" + wheel_anim;
+        #endregion
     }
 
     void A()
@@ -467,22 +468,53 @@ public class KeybControls : MonoBehaviour
 
     char get_joystick_character()
     {
-        // up is a, right is like f, down is m, left is u)
         float angle = get_joystick_angle();
-        int angle_int;
         if (angle < 0) return ' ';
+        angle = 1 - angle;
+
+        Transform which_board = UI.transform.GetChild(4).GetChild(keyboard);
+        int num_children = which_board.GetChild(1).childCount;
+        int child = 0;
+
+
+        for (int j = 0; j < num_children; j++) {
+            float left_angle = which_board.GetChild(1).GetChild(j).eulerAngles.z;
+            float right_angle = (j != which_board.GetChild(1).childCount - 1 ?
+                which_board.GetChild(1).GetChild(j + 1).eulerAngles.z
+                : which_board.GetChild(1).GetChild(0).eulerAngles.z);
+
+            left_angle /= 360;
+            right_angle /= 360;
+
+            if (Mathf.Abs(left_angle - right_angle) > 0.5f) right_angle -= 1;
+
+            print("j: " + j);
+            print("angle: " + angle);
+            print("left_angle: " + left_angle);
+            print("right_angle: " + right_angle);
+            print("minus: " + Mathf.Abs(angle_minus(left_angle, right_angle)));
+
+            if (angle < left_angle && angle > right_angle)
+            {
+                child = j;
+                break;
+            }
+
+            if (angle-1 < left_angle && angle-1 > right_angle)
+            {
+                child = j;
+                break;
+            }
+        }
 
         if (keyboard == 0)
         {
-            angle += (keyboard == 0 ? 0.5f / 26f : 0);
-            angle_int = (int)(angle * 26);
-            if (angle_int == 26) angle_int = 0;
-            return (char)(((int)(65 + (caps ? 0 : 32) + angle_int)));
+            return (char)(65 + (caps ? 0 : 32) + child);
         }
         else if (keyboard == 1)
-            return (char)((int)(48 + angle * 10));
+            return (char)(48 + child);
         else if (keyboard == 2)
-            return symbols[(int)(angle * symbols.Length)];
+            return symbols[child];
         return ' ';
     }
 
