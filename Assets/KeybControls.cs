@@ -220,7 +220,7 @@ public class KeybControls : MonoBehaviour
 
             // TEMP NEEDLE
             if (get_joystick_angle() >= 0)
-                UI.transform.GetChild(7).rotation = Quaternion.Euler(0, 0, -360 * get_joystick_angle());
+                UI.transform.GetChild(5).GetChild(0).rotation = Quaternion.Euler(0, 0, -360 * get_joystick_angle());
         }
         else
         {
@@ -309,11 +309,11 @@ public class KeybControls : MonoBehaviour
         #region update textbox
 
         cursor_blink++;
-        if (cursor_blink >= 380) cursor_blink = 0;
+        if (cursor_blink >= 60) cursor_blink = 0;
 
         string new_text = text_box;
         new_text = text_box.Substring(0, cursor)
-            + (cursor_blink < 180 ? "|" : "")
+            + (cursor_blink < 40 ? "|" : "")
             + text_box.Substring(cursor, text_box.Length-cursor);
         UI.transform.GetChild(0).GetComponent<UnityEngine.UI.Text>().text = new_text;
 
