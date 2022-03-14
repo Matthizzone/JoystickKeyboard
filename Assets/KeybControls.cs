@@ -576,7 +576,7 @@ public class KeybControls : MonoBehaviour
             // label scaling
             float angle_size = angle_minus(left_angle, right_angle);
             which_board.GetChild(2).GetChild(j).GetComponent<UnityEngine.UI.Text>().fontSize = 
-                (int)(Mathf.Min(Mathf.Max(2000 * angle_size, 0), 50));
+                (int)(Mathf.Min(Mathf.Max(2000 * angle_size, 0), 40));
         }
     }
 
