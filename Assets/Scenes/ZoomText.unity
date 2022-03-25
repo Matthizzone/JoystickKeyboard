@@ -4127,7 +4127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UI: {fileID: 1255152166}
-  stick_SFX: {fileID: 6933849507118819374, guid: 32c97e91a75ff1c40a935e952aab9f34, type: 3}
+  stick_SFX: {fileID: 6933849507118819374, guid: 7851840bbb8e3fe4f87c3ea57fa7f3ec, type: 3}
   partition: {fileID: 0}
 --- !u!114 &963194230
 MonoBehaviour:

@@ -1434,6 +1434,7 @@ GameObject:
   - component: {fileID: 963194226}
   - component: {fileID: 963194230}
   - component: {fileID: 963194229}
+  - component: {fileID: 963194231}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1513,7 +1514,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 987b03b1f063b9445b0997356d779c7b, type: 3}
   m_Name: 
@@ -1535,6 +1536,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 395e1f062a7ffd649b9c55362b12c513, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &963194231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64aef27a7cae6eb4abcfbf501c740441, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UI: {fileID: 1255152166}
+  l_stick_SFX: {fileID: 6933849507118819374, guid: 32c97e91a75ff1c40a935e952aab9f34, type: 3}
+  r_stick_SFX: {fileID: 6933849507118819374, guid: 7851840bbb8e3fe4f87c3ea57fa7f3ec, type: 3}
+  partition: {fileID: 1132516036}
 --- !u!1 &969189480
 GameObject:
   m_ObjectHideFlags: 0
