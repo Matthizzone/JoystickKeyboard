@@ -327,6 +327,21 @@ public class ZoomControls : MonoBehaviour
         input.Gameplay.Disable();
     }
 
+    public Vector2 get_left_stick()
+    {
+        return left_stick;
+    }
+
+    public Vector2 get_right_stick()
+    {
+        return right_stick;
+    }
+
+    public string get_textbox()
+    {
+        return text_box;
+    }
+
     // HELPER METHODS
 
     float get_joystick_angle()
